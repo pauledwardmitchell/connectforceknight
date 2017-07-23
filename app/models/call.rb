@@ -1,2 +1,0 @@
-class Call < ApplicationRecord
-end
