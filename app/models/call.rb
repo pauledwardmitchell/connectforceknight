@@ -4,7 +4,7 @@ class Call < ApplicationRecord
     puts "Test function running..."
   end
 
-  def big_one
+  def self.big_one
     records = Call.query_sf
     two_records = records.take(2)
     two_records.each do |record|
