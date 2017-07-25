@@ -4,6 +4,14 @@ class Call < ApplicationRecord
     puts "Test function running..."
   end
 
+  def big_one
+    records = Call.query_sf
+    two_records = records.take(2)
+    two_records.each do |record|
+      Call.call_bk(record)
+    end
+  end
+
   def self.query_sf #find sf objects that need updating
     sf_client = Call.sf_authenticate_live
     sf_response = sf_client.query('select Id,
@@ -21,16 +29,16 @@ class Call < ApplicationRecord
                                           Flood_Zone__c from REOHQ__REOHQ_Property__c where Tax_Sq_Footage__c = null')
   end
 
-  def self.call_bk
+  def self.call_bk(record)
     #establish savon client
     bk_client = Savon.client(wsdl: 'https://rc.api.sitexdata.com/sitexapi/SitexAPI.asmx?wsdl', follow_redirects: true)
     #call w savon
     bk_response = bk_client.call(:address_search, message: { 'Key' => ENV['BK_TEST_KEY'],
-                                                          'Address' => '5625 Shaddelee Lane',
-                                                          'LastLine' => '33919',
-                                                          'OwnerName' => 'Smith',
-                                                          'ReportType' => '400',
-                                                          'ClientReference' => '400' })
+                                                             'Address' => record.Name,
+                                                             'LastLine' => record.REOHQ__REOHQ_Zip_Code__c,
+                                                             'OwnerName' => 'Null',
+                                                             'ReportType' => '400',
+                                                             'ClientReference' => '400' })
     bk_response_hash = bk_response.to_hash
     # binding.pry
     #handle result
