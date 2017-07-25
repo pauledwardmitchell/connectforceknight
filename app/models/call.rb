@@ -5,7 +5,7 @@ class Call < ApplicationRecord
   end
 
   def self.query_sf #find sf objects that need updating
-    sf_client = Call.sf_authenticate
+    sf_client = Call.sf_authenticate_live
     sf_response = sf_client.query('select Id, REOHQ__REOHQ_Property__c, REOHQ__REOHQ_Parcel_ID__c, REOHQ__REOHQ_County__c, REOHQ__REOHQ_City__c, REOHQ__REOHQ_State__c, REOHQ__REOHQ_Zip_Code__c, Tax_Sq_Footage__c, Flood_Zone__c from REOHQ__REOHQ_Property__c where Tax_Sq_Footage__c = null')
   end
 
