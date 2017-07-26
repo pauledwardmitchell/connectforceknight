@@ -12,6 +12,7 @@ class Call < ApplicationRecord
       updated_record = Call.call_bk(record) #set this equal to new_record?  then have new record hit sf?
       Call.update_sf(updated_record, sf_client)
     end
+    puts "Update complete"
   end
 
   def self.query_sf(sf_client) #find sf objects that need updating
@@ -36,7 +37,7 @@ class Call < ApplicationRecord
 
     #build address
     address = Call.address(record)
-    puts address
+    puts "Updating record for: " + address
 
     #call w savon
     bk_response = bk_client.call(:address_search, message: { 'Key' => ENV['BK_TEST_KEY'],
@@ -59,14 +60,16 @@ class Call < ApplicationRecord
     record.Tax_Sq_Footage__c = tax_sq_ft
     record.Flood_Zone__c = flood_zone_code
 
-    puts record
+    # puts record
     record
   end
 
   def self.update_sf(updated_record, sf_client)
     puts "This object would hit the SF db:"
     puts "ID: " + updated_record.Id + " / FLOOD CODE: " + updated_record.Flood_Zone__c + " / TAX AREA: " + updated_record.Tax_Sq_Footage__c
-    puts updated_record
+    puts "- - - - - - - - "
+    puts " "
+    # puts updated_record
 
     # client.update('REOHQ__REOHQ_Property__c', Id: updated_record.Id, Tax_Sq_Footage__c: updated_record.Tax_Sq_Footage__c, Flood_Zone__c: updated_record.Flood_Zone__c)
   end
