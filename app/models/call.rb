@@ -5,16 +5,16 @@ class Call < ApplicationRecord
   end
 
   def self.big_one
-    records = Call.query_sf
+    sf_client = Call.sf_authenticate_live
+    records = Call.query_sf(sf_client)
     two_records = records.take(2)
     two_records.each do |record|
       updated_record = Call.call_bk(record) #set this equal to new_record?  then have new record hit sf?
-      Call.update_sf(updated_record)
+      Call.update_sf(updated_record, sf_client)
     end
   end
 
-  def self.query_sf #find sf objects that need updating
-    sf_client = Call.sf_authenticate_live
+  def self.query_sf(sf_client) #find sf objects that need updating
     sf_response = sf_client.query('select Id,
                                           Name,
                                           REOHQ__REOHQ_Parcel_ID__c,
@@ -63,9 +63,9 @@ class Call < ApplicationRecord
     record
   end
 
-  def self.update_sf(updated_record)
+  def self.update_sf(updated_record, sf_client)
     puts "This object would hit the SF db:"
-    puts "ID: " + updated_record.Id
+    puts "ID: " + updated_record.Id + " / FLOOD CODE: " + updated_record.Flood_Zone__c + " / TAX AREA: " + updated_record.Tax_Sq_Footage__c
     puts updated_record
 
     # client.update('REOHQ__REOHQ_Property__c', Id: updated_record.Id, Tax_Sq_Footage__c: updated_record.Tax_Sq_Footage__c, Flood_Zone__c: updated_record.Flood_Zone__c)
