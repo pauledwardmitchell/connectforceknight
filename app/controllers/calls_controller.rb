@@ -2,7 +2,7 @@ class CallsController < ApplicationController
 
   def index
 
-    Call.test_fn
+    Call.big_one
 
   end
 

@@ -5,15 +5,17 @@ class Call < ApplicationRecord
   end
 
   def self.big_one
-    records = Call.query_sf
+    sf_client = Call.sf_authenticate_live
+    records = Call.query_sf(sf_client)
     two_records = records.take(2)
     two_records.each do |record|
-      Call.call_bk(record)
+      updated_record = Call.call_bk(record) #set this equal to new_record?  then have new record hit sf?
+      Call.update_sf(updated_record, sf_client)
     end
+    puts "Update complete"
   end
 
-  def self.query_sf #find sf objects that need updating
-    sf_client = Call.sf_authenticate_live
+  def self.query_sf(sf_client) #find sf objects that need updating
     sf_response = sf_client.query('select Id,
                                           Name,
                                           REOHQ__REOHQ_Parcel_ID__c,
@@ -32,22 +34,57 @@ class Call < ApplicationRecord
   def self.call_bk(record)
     #establish savon client
     bk_client = Savon.client(wsdl: 'https://rc.api.sitexdata.com/sitexapi/SitexAPI.asmx?wsdl', follow_redirects: true)
+
+    #build address
+    address = Call.address(record)
+    puts "Updating record for: " + address
+
     #call w savon
     bk_response = bk_client.call(:address_search, message: { 'Key' => ENV['BK_TEST_KEY'],
-                                                             'Address' => record.Name,
+                                                             'Address' => address,
                                                              'LastLine' => record.REOHQ__REOHQ_Zip_Code__c,
                                                              'OwnerName' => 'Null',
                                                              'ReportType' => '400',
                                                              'ClientReference' => '400' })
-    bk_response_hash = bk_response.to_hash
-    # binding.pry
-    #handle result
+
+    #extract report_url from api response
+    report_url = bk_response.hash[:envelope][:body][:address_search_response][:address_search_result][:report_url]
+    #open xml with nokogiri
+    xml = Nokogiri::XML(open(report_url))
+
+    #parse xml to extract values
+    tax_sq_ft = xml.search("BuildingArea")[0].children.text
+    flood_zone_code = xml.search("FloodZone")[0].children.text
+
+    #set vales in record object
+    record.Tax_Sq_Footage__c = tax_sq_ft
+    record.Flood_Zone__c = flood_zone_code
+
+    # puts record
+    record
   end
 
-  def self.update_sf
-    # Update the Account with `Id` '0016000000MRatd'
-    # client.update('Account', Id: '0016000000MRatd', Name: 'Whizbang Corp')
-    # => true
+  def self.update_sf(updated_record, sf_client)
+    puts "This object would hit the SF db:"
+    puts "ID: " + updated_record.Id + " / FLOOD CODE: " + updated_record.Flood_Zone__c + " / TAX AREA: " + updated_record.Tax_Sq_Footage__c
+    puts "- - - - - - - - "
+    puts " "
+    # puts updated_record
+
+    # client.update('REOHQ__REOHQ_Property__c', Id: updated_record.Id, Tax_Sq_Footage__c: updated_record.Tax_Sq_Footage__c, Flood_Zone__c: updated_record.Flood_Zone__c)
+  end
+
+  def self.address(record)
+    #build address
+    address = ""
+    if record.Street_Prefix__c
+      address = record.Street_Prefix__c + " "
+    end
+    address = address + record.Street_Number__c + " " + record.Street_Name__c + " "
+    if record.Street_Suffix__c
+      address = address + record.Street_Suffix__c
+    end
+    address
   end
 
   def self.sf_authenticate
