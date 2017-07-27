@@ -8,10 +8,12 @@ class Call < ApplicationRecord
 
   def self.big_one
     sf_client = Call.sf_authenticate_live
+    bk_client = Savon.client(wsdl: 'https://rc.api.sitexdata.com/sitexapi/SitexAPI.asmx?wsdl', follow_redirects: true)
+
     records = Call.query_sf(sf_client)
     two_records = records.take(2)
     two_records.each do |record|
-      updated_record = Call.call_bk(record) #set this equal to new_record?  then have new record hit sf?
+      updated_record = Call.call_bk(record, bk_client) #set this equal to new_record?  then have new record hit sf?
       Call.update_sf(updated_record, sf_client)
     end
     puts "Update complete"
@@ -33,9 +35,9 @@ class Call < ApplicationRecord
                                           Flood_Zone__c from REOHQ__REOHQ_Property__c where Tax_Sq_Footage__c = null')
   end
 
-  def self.call_bk(record)
+  def self.call_bk(record, bk_client)
     #establish savon client
-    bk_client = Savon.client(wsdl: 'https://rc.api.sitexdata.com/sitexapi/SitexAPI.asmx?wsdl', follow_redirects: true)
+    # bk_client = Savon.client(wsdl: 'https://rc.api.sitexdata.com/sitexapi/SitexAPI.asmx?wsdl', follow_redirects: true)
 #UNCOMMENT AFTER PROXY IS WHITELISTED ON BK
     # bk_client = Savon.client(wsdl: 'https://rc.api.sitexdata.com/sitexapi/SitexAPI.asmx?wsdl', proxy: "http://proxy:2ff0a2f7ff51-4ec1-834d-13520242e6b2@proxy-54-83-47-43.proximo.io", follow_redirects: true)
     #build address
