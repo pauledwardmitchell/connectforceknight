@@ -6,9 +6,13 @@ class Call < ApplicationRecord
     sleep 55
   end
 
-  def self.big_one
+  def self.big_one_auth
     sf_client = Call.sf_authenticate_live
     bk_client = Savon.client(wsdl: 'https://rc.api.sitexdata.com/sitexapi/SitexAPI.asmx?wsdl', follow_redirects: true)
+    Call.big_one(sf_client, bk_client)
+  end
+
+  def self.big_one(sf_client, bk_client)
 
     records = Call.query_sf(sf_client)
     two_records = records.take(2)
