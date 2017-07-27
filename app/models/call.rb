@@ -7,16 +7,15 @@ class Call < ApplicationRecord
 
   def self.big_one_auth
     sf_client = Call.sf_authenticate_live
-    bk_client = Savon.client(wsdl: 'https://rc.api.sitexdata.com/sitexapi/SitexAPI.asmx?wsdl', follow_redirects: true)
+    bk_client = Call.create_bk_client
     Call.big_one(sf_client, bk_client)
   end
 
   def self.big_one(sf_client, bk_client)
-
     records = Call.query_sf(sf_client)
     two_records = records.take(2)
     two_records.each do |record|
-      updated_record = Call.call_bk(record, bk_client) #set this equal to new_record?  then have new record hit sf?
+      updated_record = Call.call_bk(record, bk_client)
       Call.update_sf(updated_record, sf_client)
     end
     puts "Update complete"
@@ -44,14 +43,9 @@ class Call < ApplicationRecord
                                    AND REOHQ__REOHQ_County__c IN ('Cook', 'Lake', 'McHenry', 'Kane', 'DuPage', 'Will', 'Kendall')
                                    AND Area_Number__c != null
                                    AND BKFS__c = false")
-
   end
 
   def self.call_bk(record, bk_client)
-    #establish savon client
-    # bk_client = Savon.client(wsdl: 'https://rc.api.sitexdata.com/sitexapi/SitexAPI.asmx?wsdl', follow_redirects: true)
-#UNCOMMENT AFTER PROXY IS WHITELISTED ON BK
-    # bk_client = Savon.client(wsdl: 'https://rc.api.sitexdata.com/sitexapi/SitexAPI.asmx?wsdl', proxy: "http://proxy:2ff0a2f7ff51-4ec1-834d-13520242e6b2@proxy-54-83-47-43.proximo.io", follow_redirects: true)
     #build address
     address = Call.address(record)
     puts "Updating record for: " + address
@@ -66,6 +60,7 @@ class Call < ApplicationRecord
 
     #extract report_url from api response
     report_url = bk_response.hash[:envelope][:body][:address_search_response][:address_search_result][:report_url]
+
     #open xml with nokogiri
     xml = Nokogiri::XML(open(report_url))
 
@@ -73,11 +68,14 @@ class Call < ApplicationRecord
     tax_sq_ft = xml.search("BuildingArea")[0].children.text
     flood_zone_code = xml.search("FloodZone")[0].children.text
 
+    #remove trailing white space on flood zone code
+    flood_zone_code = flood_zone_code.strip
+
     #set vales in record object
     record.Tax_Sq_Footage__c = tax_sq_ft
     record.Flood_Zone__c = flood_zone_code
 
-    # puts record
+    #returns updated record
     record
   end
 
@@ -86,7 +84,6 @@ class Call < ApplicationRecord
     puts "ID: " + updated_record.Id + " / FLOOD CODE: " + updated_record.Flood_Zone__c + " / TAX AREA: " + updated_record.Tax_Sq_Footage__c
     puts "- - - - - - - - "
     puts " "
-    # puts updated_record
 
     # client.update('REOHQ__REOHQ_Property__c', Id: updated_record.Id, Tax_Sq_Footage__c: updated_record.Tax_Sq_Footage__c, Flood_Zone__c: updated_record.Flood_Zone__c, BKFS__c: true)
   end
@@ -118,6 +115,10 @@ class Call < ApplicationRecord
                   security_token: ENV['SALESFORCE_SECURITY_TOKEN_LIVE'],
                   client_id: ENV['SALESFORCE_CLIENT_ID_LIVE'],
                   client_secret: ENV['SALESFORCE_CLIENT_SECRET_LIVE'])
+  end
+
+  def self.create_bk_client
+    bk_client = Savon.client(wsdl: 'https://rc.api.sitexdata.com/sitexapi/SitexAPI.asmx?wsdl', follow_redirects: true) #, proxy: "http://proxy:2ff0a2f7ff51-4ec1-834d-13520242e6b2@proxy-54-83-47-43.proximo.io"
   end
 
 end
