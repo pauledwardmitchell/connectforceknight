@@ -2,6 +2,8 @@ class Call < ApplicationRecord
 
   def self.test_fn
     puts "Test function running..."
+
+    sleep 55
   end
 
   def self.big_one
@@ -34,7 +36,8 @@ class Call < ApplicationRecord
   def self.call_bk(record)
     #establish savon client
     bk_client = Savon.client(wsdl: 'https://rc.api.sitexdata.com/sitexapi/SitexAPI.asmx?wsdl', follow_redirects: true)
-
+#UNCOMMENT AFTER PROXY IS WHITELISTED ON BK
+    # bk_client = Savon.client(wsdl: 'https://rc.api.sitexdata.com/sitexapi/SitexAPI.asmx?wsdl', proxy: "http://proxy:2ff0a2f7ff51-4ec1-834d-13520242e6b2@proxy-54-83-47-43.proximo.io", follow_redirects: true)
     #build address
     address = Call.address(record)
     puts "Updating record for: " + address
@@ -105,3 +108,6 @@ class Call < ApplicationRecord
 
 
 end
+
+# ADD NEW FIELD TO THIS QUERY
+# .query("SELECT Name FROM REOHQ__REOHQ_Property__c WHERE RecordType.Name = 'Acquisition Flip Property' AND REOHQ__REOHQ_Property_Type__c = 'Detached Single' AND ((MLS_Status__c = 'Closed' AND Closed_Date__c = LAST_N_MONTHS:12) OR MLS_Status__c IN ('Pending', 'Contingent', 'Active', 'New', 'Price Change', 'Back on Market', 'Reactivated')) AND Tax_Sq_Footage__c IN (null, 0) AND REOHQ__REOHQ_County__c IN ('Cook', 'Lake', 'McHenry', 'Kane', 'DuPage', 'Will', 'Kendall') AND Area_Number__c != null")
