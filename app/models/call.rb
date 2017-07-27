@@ -2,7 +2,6 @@ class Call < ApplicationRecord
 
   def self.test_fn
     puts "Test function running..."
-
     sleep 55
   end
 
@@ -24,7 +23,7 @@ class Call < ApplicationRecord
   end
 
   def self.query_sf(sf_client) #find sf objects that need updating
-    sf_response = sf_client.query('select Id,
+    sf_response = sf_client.query("SELECT Id,
                                           Name,
                                           REOHQ__REOHQ_Parcel_ID__c,
                                           REOHQ__REOHQ_County__c,
@@ -35,8 +34,17 @@ class Call < ApplicationRecord
                                           Street_Number__c,
                                           Street_Name__c,
                                           Street_Suffix__c,
+                                          BKFS__c,
                                           Tax_Sq_Footage__c,
-                                          Flood_Zone__c from REOHQ__REOHQ_Property__c where Tax_Sq_Footage__c = null')
+                                          Flood_Zone__c from REOHQ__REOHQ_Property__c
+                                   WHERE RecordType.Name = 'Acquisition Flip Property'
+                                   AND REOHQ__REOHQ_Property_Type__c = 'Detached Single'
+                                   AND ((MLS_Status__c = 'Closed' AND Closed_Date__c = LAST_N_MONTHS:12) OR MLS_Status__c IN ('Pending', 'Contingent', 'Active', 'New', 'Price Change', 'Back on Market', 'Reactivated'))
+                                   AND Tax_Sq_Footage__c IN (null, 0)
+                                   AND REOHQ__REOHQ_County__c IN ('Cook', 'Lake', 'McHenry', 'Kane', 'DuPage', 'Will', 'Kendall')
+                                   AND Area_Number__c != null
+                                   AND BKFS__c = false")
+
   end
 
   def self.call_bk(record, bk_client)
@@ -80,7 +88,7 @@ class Call < ApplicationRecord
     puts " "
     # puts updated_record
 
-    # client.update('REOHQ__REOHQ_Property__c', Id: updated_record.Id, Tax_Sq_Footage__c: updated_record.Tax_Sq_Footage__c, Flood_Zone__c: updated_record.Flood_Zone__c)
+    # client.update('REOHQ__REOHQ_Property__c', Id: updated_record.Id, Tax_Sq_Footage__c: updated_record.Tax_Sq_Footage__c, Flood_Zone__c: updated_record.Flood_Zone__c, BKFS__c: true)
   end
 
   def self.address(record)
@@ -112,8 +120,4 @@ class Call < ApplicationRecord
                   client_secret: ENV['SALESFORCE_CLIENT_SECRET_LIVE'])
   end
 
-
 end
-
-# ADD NEW FIELD TO THIS QUERY
-# .query("SELECT Name FROM REOHQ__REOHQ_Property__c WHERE RecordType.Name = 'Acquisition Flip Property' AND REOHQ__REOHQ_Property_Type__c = 'Detached Single' AND ((MLS_Status__c = 'Closed' AND Closed_Date__c = LAST_N_MONTHS:12) OR MLS_Status__c IN ('Pending', 'Contingent', 'Active', 'New', 'Price Change', 'Back on Market', 'Reactivated')) AND Tax_Sq_Footage__c IN (null, 0) AND REOHQ__REOHQ_County__c IN ('Cook', 'Lake', 'McHenry', 'Kane', 'DuPage', 'Will', 'Kendall') AND Area_Number__c != null")
