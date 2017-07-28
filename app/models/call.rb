@@ -16,7 +16,7 @@ class Call < ApplicationRecord
     records = Call.query_sf(sf_client)
 
     if records.first
-      five_records = records.take(2)
+      five_records = records.take(20)
       five_records.each do |record|
         updated_record = Call.call_bk(record, bk_client)
         Call.update_sf(record, updated_record, sf_client)
@@ -64,7 +64,7 @@ class Call < ApplicationRecord
                                                              'OwnerName' => 'Null',
                                                              'ReportType' => '400',
                                                              'ClientReference' => '400' })
-binding.pry
+# binding.pry
     #extract report_url from api response
     report_url = bk_response.hash[:envelope][:body][:address_search_response][:address_search_result][:report_url]
 
@@ -93,18 +93,17 @@ binding.pry
   end
 
   def self.update_sf(record, updated_record, sf_client)
-    # puts "This object would hit the SF db:"
-    # binding.pry
-    # puts "ID: " + updated_record.Id + " / FLOOD CODE: " + updated_record.Flood_Zone__c + " / TAX AREA: " + updated_record.Tax_Sq_Footage__c
-    puts "- - - - - - - - "
-    puts " "
     if updated_record.Tax_Sq_Footage__c == "0"
-    # binding.pry
-     puts "The tax_sq_ft for this record is not being updated because the BKFS value is zero."
-    #  sf_client.update('REOHQ__REOHQ_Property__c', Id: updated_record.Id, Flood_Zone__c: updated_record.Flood_Zone__c, BKFS__c: true)
+      puts "The tax_sq_ft for this record is not being updated because the BKFS value is zero."
+      sf_client.update('REOHQ__REOHQ_Property__c', Id: updated_record.Id, Flood_Zone__c: updated_record.Flood_Zone__c, BKFS__c: true)
+      puts "Record updated in Salesforce. ID: " + record.Id
+      puts "- - - - - - - - "
+      puts " "
     else
-    # binding.pry
-    #  sf_client.update('REOHQ__REOHQ_Property__c', Id: updated_record.Id, Tax_Sq_Footage__c: updated_record.Tax_Sq_Footage__c, Flood_Zone__c: updated_record.Flood_Zone__c, BKFS__c: true)
+      sf_client.update('REOHQ__REOHQ_Property__c', Id: updated_record.Id, Tax_Sq_Footage__c: updated_record.Tax_Sq_Footage__c, Flood_Zone__c: updated_record.Flood_Zone__c, BKFS__c: true)
+      puts "Record updated in Salesforce. ID: " + record.Id
+      puts "- - - - - - - - "
+      puts " "
     end
   end
 
