@@ -41,6 +41,7 @@ class Call < ApplicationRecord
                                           Street_Name__c,
                                           Street_Suffix__c,
                                           BKFS__c,
+                                          Lot_Square_footage__c,
                                           Tax_Sq_Footage__c,
                                           Flood_Zone__c from REOHQ__REOHQ_Property__c
                                    WHERE RecordType.Name = 'Acquisition Flip Property'
@@ -53,28 +54,39 @@ class Call < ApplicationRecord
   end
 
   def self.call_bk(record, bk_client)
-    #build address
+    #build address, fips
+    fips = Call.get_fips(record.REOHQ__REOHQ_County__c)
     address = Call.address(record)
     puts "Calling BKFS for information on: " + address
 
     #call w savon
+
+    #if record.REOHQ__REOHQ_Parcel_ID__c != nil && Call.get_fips(record.REOHQ__REOHQ_County__c) != nil
+      #bk_response = Call.bkfs_apn_search(bk_client, fips, record)
+      #bk_response
+    #else
+      #bk_response = Call.bkfs_address_search(bk_client, address, record)
+      #bk_response
+    #end
+
     bk_response = bk_client.call(:address_search, message: { 'Key' => ENV['BK_LIVE_KEY'],
                                                              'Address' => address,
                                                              'LastLine' => record.REOHQ__REOHQ_Zip_Code__c,
                                                              'OwnerName' => 'Null',
                                                              'ReportType' => '400',
                                                              'ClientReference' => '400' })
-# binding.pry
     #extract report_url from api response
     report_url = bk_response.hash[:envelope][:body][:address_search_response][:address_search_result][:report_url]
+
 
     if bk_response.body[:address_search_response][:address_search_result][:status_code] == "OK"
       #open xml with nokogiri
       xml = Nokogiri::XML(open(report_url))
-
+binding.pry
       #parse xml to extract values
       tax_sq_ft = xml.search("BuildingArea")[0].children.text
       flood_zone_code = xml.search("FloodZone")[0].children.text
+      lot_sq_footage = xml.search("LotSize")[0].children.text
 
       #remove trailing white space on flood zone code
       flood_zone_code = flood_zone_code.strip
@@ -82,9 +94,14 @@ class Call < ApplicationRecord
       #set vales in record object
       record.Tax_Sq_Footage__c = tax_sq_ft
       record.Flood_Zone__c = flood_zone_code
+      record.Lot_Square_footage__c = lot_sq_footage
 
       #returns updated record
       record
+    elsif bk_response.body[:address_search_response][:address_search_result][:status_code] == "IK"
+      puts "Check API Credentials"
+      log.puts "Check BKFS API Credentials"
+      record = nil
     else
       puts "BKFS cannot find a match for this property. STATUS CODE: " + bk_response.body[:address_search_response][:address_search_result][:status_code]
       record
@@ -92,15 +109,34 @@ class Call < ApplicationRecord
     record
   end
 
+  def self.bkfs_apn_search(bk_client, fips, record)
+    bk_response = bk_client.call(:address_search, message: { 'Key' => ENV['BK_LIVE_KEY'],
+                                                             'FIPS' => fips
+                                                             'APN' => record.REOHQ__REOHQ_Parcel_ID__c,
+                                                             'ReportType' => '400',
+                                                             'ClientReference' => '400' })
+    bk_response
+  end
+
+  def self.bkfs_address_search(bk_client, address, record)
+    bk_response = bk_client.call(:address_search, message: { 'Key' => ENV['BK_LIVE_KEY'],
+                                                             'Address' => address,
+                                                             'LastLine' => record.REOHQ__REOHQ_Zip_Code__c,
+                                                             'OwnerName' => 'Null',
+                                                             'ReportType' => '400',
+                                                             'ClientReference' => '400' })
+    bk_response
+  end
+
   def self.update_sf(record, updated_record, sf_client)
     if updated_record.Tax_Sq_Footage__c == "0"
+      sf_client.update('REOHQ__REOHQ_Property__c', Id: updated_record.Id, Flood_Zone__c: updated_record.Flood_Zone__c, Lot_Square_footage__c: updated_record.Lot_Square_footage__c, BKFS__c: true)
       puts "The tax_sq_ft for this record is not being updated because the BKFS value is zero."
-      sf_client.update('REOHQ__REOHQ_Property__c', Id: updated_record.Id, Flood_Zone__c: updated_record.Flood_Zone__c, BKFS__c: true)
       puts "Record updated in Salesforce. ID: " + record.Id
       puts "- - - - - - - - "
       puts " "
     else
-      sf_client.update('REOHQ__REOHQ_Property__c', Id: updated_record.Id, Tax_Sq_Footage__c: updated_record.Tax_Sq_Footage__c, Flood_Zone__c: updated_record.Flood_Zone__c, BKFS__c: true)
+      sf_client.update('REOHQ__REOHQ_Property__c', Id: updated_record.Id, Tax_Sq_Footage__c: updated_record.Tax_Sq_Footage__c, Flood_Zone__c: updated_record.Flood_Zone__c, Lot_Square_footage__c: updated_record.Lot_Square_footage__c, BKFS__c: true)
       puts "Record updated in Salesforce. ID: " + record.Id
       puts "- - - - - - - - "
       puts " "
@@ -119,6 +155,27 @@ class Call < ApplicationRecord
     end
     address = address.strip
     address
+  end
+
+  def self.get_fips(county_name)
+    case county_name
+    when 'Cook'
+      return '17031'
+    when 'Lake'
+      return '17097'
+    when 'McHenry'
+      return '17111'
+    when 'Kane'
+      return '17089'
+    when 'DuPage', 'Du Page'
+      return '17043'
+    when 'Will'
+      return '17197'
+    when 'Kendall'
+      return '17093'
+    else
+      return nil
+    end
   end
 
   def self.sf_authenticate
