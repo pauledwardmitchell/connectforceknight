@@ -146,7 +146,7 @@ class Call < ApplicationRecord
   end
 
   def self.create_bk_client_with_static_ip
-    bk_client = Savon.client(wsdl: 'https://rc.api.sitexdata.com/sitexapi/SitexAPI.asmx?wsdl', proxy: ENV['PROXIMO_URL'], follow_redirects: true)
+    bk_client = Savon.client(wsdl: 'https://api.sitexdata.com/sitexapi/SitexAPI.asmx?wsdl', proxy: ENV['PROXIMO_URL'], follow_redirects: true)
   end
 
 end
