@@ -16,7 +16,7 @@ class Call < ApplicationRecord
     records = Call.query_sf(sf_client)
 
     if records.first
-      five_records = records.take(20)
+      five_records = records.take(2)
       five_records.each do |record|
         updated_record = Call.call_bk(record, bk_client)
         Call.update_sf(record, updated_record, sf_client)
