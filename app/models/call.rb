@@ -55,7 +55,7 @@ class Call < ApplicationRecord
 
   def self.call_bk(record, bk_client)
     #build address, fips
-    fips = Call.get_fips(record.REOHQ__REOHQ_County__c)
+    # fips = Call.get_fips(record.REOHQ__REOHQ_County__c)
     address = Call.address(record)
     puts "Calling BKFS for information on: " + address
 
@@ -100,22 +100,12 @@ binding.pry
       record
     elsif bk_response.body[:address_search_response][:address_search_result][:status_code] == "IK"
       puts "Check API Credentials"
-      log.puts "Check BKFS API Credentials"
       record = nil
     else
       puts "BKFS cannot find a match for this property. STATUS CODE: " + bk_response.body[:address_search_response][:address_search_result][:status_code]
       record
     end
     record
-  end
-
-  def self.bkfs_apn_search(bk_client, fips, record)
-    bk_response = bk_client.call(:address_search, message: { 'Key' => ENV['BK_LIVE_KEY'],
-                                                             'FIPS' => fips
-                                                             'APN' => record.REOHQ__REOHQ_Parcel_ID__c,
-                                                             'ReportType' => '400',
-                                                             'ClientReference' => '400' })
-    bk_response
   end
 
   def self.bkfs_address_search(bk_client, address, record)
@@ -157,26 +147,6 @@ binding.pry
     address
   end
 
-  def self.get_fips(county_name)
-    case county_name
-    when 'Cook'
-      return '17031'
-    when 'Lake'
-      return '17097'
-    when 'McHenry'
-      return '17111'
-    when 'Kane'
-      return '17089'
-    when 'DuPage', 'Du Page'
-      return '17043'
-    when 'Will'
-      return '17197'
-    when 'Kendall'
-      return '17093'
-    else
-      return nil
-    end
-  end
 
   def self.sf_authenticate
     Restforce.new(username: ENV['SALESFORCE_USERNAME'],
@@ -206,4 +176,42 @@ binding.pry
     bk_client = Savon.client(wsdl: 'https://api.sitexdata.com/sitexapi/SitexAPI.asmx?wsdl', proxy: ENV['PROXIMO_URL'], follow_redirects: true)
   end
 
+  # def self.bkfs_apn_search(bk_client, fips, record)
+  #   bk_response = bk_client.call(:apn_search, message: { 'Key' => ENV['BK_LIVE_KEY'],
+  #                                                            'FIPS' => fips,
+  #                                                            'APN' => record.REOHQ__REOHQ_Parcel_ID__c,
+  #                                                            'ReportType' => '400',
+  #                                                            'ClientReference' => '400' })
+  #   bk_response
+  # end
+
+  # def self.bkfs_test_apn_search(bk_client, fips, record)
+  #   bk_response = bk_client.call(:apn_search, message: { 'Key' => ENV['BK_TEST_KEY'],
+  #                                                            'FIPS' => fips,
+  #                                                            'APN' => record.REOHQ__REOHQ_Parcel_ID__c,
+  #                                                            'ReportType' => '400',
+  #                                                            'ClientReference' => '400' })
+  #   bk_response
+  # end
+
+  # def self.get_fips(county_name)
+  #   case county_name
+  #   when 'Cook'
+  #     return '17031'
+  #   when 'Lake'
+  #     return '17097'
+  #   when 'McHenry'
+  #     return '17111'
+  #   when 'Kane'
+  #     return '17089'
+  #   when 'DuPage', 'Du Page'
+  #     return '17043'
+  #   when 'Will'
+  #     return '17197'
+  #   when 'Kendall'
+  #     return '17093'
+  #   else
+  #     return nil
+  #   end
+  # end
 end
