@@ -25,7 +25,6 @@ class Call < ApplicationRecord
       puts "No records to update at this time"
     end
 
-    puts "Update complete"
   end
 
   def self.query_sf(sf_client) #find sf objects that need updating
@@ -82,7 +81,6 @@ class Call < ApplicationRecord
     if bk_response.body[:address_search_response][:address_search_result][:status_code] == "OK"
       #open xml with nokogiri
       xml = Nokogiri::XML(open(report_url))
-binding.pry
       #parse xml to extract values
       tax_sq_ft = xml.search("BuildingArea")[0].children.text
       flood_zone_code = xml.search("FloodZone")[0].children.text
@@ -172,7 +170,7 @@ binding.pry
     bk_client = Savon.client(wsdl: 'https://api.sitexdata.com/sitexapi/SitexAPI.asmx?wsdl', follow_redirects: true)
   end
 
-  def self.create_bk_client_with_static_ip
+  def self.create_live_bk_client_with_static_ip
     bk_client = Savon.client(wsdl: 'https://api.sitexdata.com/sitexapi/SitexAPI.asmx?wsdl', proxy: ENV['PROXIMO_URL'], follow_redirects: true)
   end
 
