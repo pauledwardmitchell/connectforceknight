@@ -20,9 +20,12 @@ task :sf_to_bk_task => :environment do
   start_time = Time.now
 
   #10.times do #if can't pass in args here, just have it listed 10 times
-
+    #if Time.now - start_time > 570
+      #break
+    #end
     Call.big_one(sf_client, bk_client)
     #sleep 48
     #puts "Heroku test task loop done."
   #end
+  puts "Sync task finished"
 end
