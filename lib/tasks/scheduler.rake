@@ -41,7 +41,7 @@ task :sf_to_bk_task_local => :environment do
 
   10.times do
     puts "Process running for : " + ((Time.now - start_time) / 60).round(2).to_s + " minutes..."
-    if Time.now - start_time > 560
+    if Time.now - start_time > 60 #560
       break
     end
     Call.big_one(sf_client, bk_client)

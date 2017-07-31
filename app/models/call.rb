@@ -14,10 +14,10 @@ class Call < ApplicationRecord
   def self.big_one(sf_client, bk_client)
     puts "Calling Salesforce for records to update..."
     records = Call.query_sf(sf_client)
+    # puts records.count
 
     if records.first
-      five_records = records.take(2)
-      five_records.each do |record|
+      records.each do |record|
         updated_record = Call.call_bk(record, bk_client)
         Call.update_sf(record, updated_record, sf_client)
       end
@@ -100,7 +100,7 @@ class Call < ApplicationRecord
       puts "Check API Credentials"
       record = nil
     else
-      puts "BKFS cannot find a match for this property. STATUS CODE: " + bk_response.body[:address_search_response][:address_search_result][:status_code]
+      puts "BKFS cannot find a match for this property. STATUS CODE: " + bk_response.body[:address_search_response][:address_search_result][:status_code] + " / " + bk_response.body[:address_search_response][:address_search_result][:status]
       record
     end
     record
@@ -118,14 +118,27 @@ class Call < ApplicationRecord
 
   def self.update_sf(record, updated_record, sf_client)
     if updated_record.Tax_Sq_Footage__c == "0"
-      sf_client.update('REOHQ__REOHQ_Property__c', Id: updated_record.Id, Flood_Zone__c: updated_record.Flood_Zone__c, Lot_Square_footage__c: updated_record.Lot_Square_footage__c, BKFS__c: true)
-      puts "The tax_sq_ft for this record is not being updated because the BKFS value is zero."
-      puts "Record updated in Salesforce. ID: " + record.Id
+      if sf_client.update('REOHQ__REOHQ_Property__c', Id: updated_record.Id, Flood_Zone__c: updated_record.Flood_Zone__c, Lot_Square_footage__c: updated_record.Lot_Square_footage__c, BKFS__c: true)
+        puts "The tax_sq_ft for this record is not being updated because the BKFS value is zero."
+        puts "Record updated in Salesforce. ID: " + record.Id
+      else
+        puts "Record NOT updated in Salesforce. ID: " + record.Id
+      end
       puts "- - - - - - - - "
       puts " "
     else
-      sf_client.update('REOHQ__REOHQ_Property__c', Id: updated_record.Id, Tax_Sq_Footage__c: updated_record.Tax_Sq_Footage__c, Flood_Zone__c: updated_record.Flood_Zone__c, Lot_Square_footage__c: updated_record.Lot_Square_footage__c, BKFS__c: true)
-      puts "Record updated in Salesforce. ID: " + record.Id
+      if sf_client.update('REOHQ__REOHQ_Property__c', Id: updated_record.Id, Tax_Sq_Footage__c: updated_record.Tax_Sq_Footage__c, Flood_Zone__c: updated_record.Flood_Zone__c, Lot_Square_footage__c: updated_record.Lot_Square_footage__c, BKFS__c: true)
+        puts "Record updated in Salesforce. ID: " + record.Id
+      else
+        puts "Reauthenticating Salesforce client..."
+        sf_client = Call.sf_authenticate_live
+        if sf_client.update('REOHQ__REOHQ_Property__c', Id: updated_record.Id, Tax_Sq_Footage__c: updated_record.Tax_Sq_Footage__c, Flood_Zone__c: updated_record.Flood_Zone__c, Lot_Square_footage__c: updated_record.Lot_Square_footage__c, BKFS__c: true)
+          puts "Record updated in Salesforce. ID: " + record.Id
+        else
+          puts "Record NOT updated in Salesforce. ID: " + record.Id
+          sleep 36000
+        end
+      end
       puts "- - - - - - - - "
       puts " "
     end
