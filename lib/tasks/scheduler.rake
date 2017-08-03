@@ -14,7 +14,7 @@ end
 
 task :sf_to_bk_task => :environment do
   puts "Sync task is running..."
-  #initialize clients out here?
+
   sf_client = Call.sf_authenticate_live
   bk_client = Call.create_live_bk_client_with_static_ip
   start_time = Time.now
@@ -34,14 +34,14 @@ end
 
 task :sf_to_bk_task_local => :environment do
   puts "Sync task is running..."
-  #initialize clients out here?
+
   sf_client = Call.sf_authenticate_live
   bk_client = Call.create_live_bk_client
   start_time = Time.now
 
   10.times do
     puts "Process running for : " + ((Time.now - start_time) / 60).round(2).to_s + " minutes..."
-    if Time.now - start_time > 60 #560
+    if Time.now - start_time > 560
       break
     end
     Call.big_one(sf_client, bk_client)
