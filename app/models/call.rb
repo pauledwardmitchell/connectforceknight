@@ -14,7 +14,7 @@ class Call < ApplicationRecord
   def self.big_one(sf_client, bk_client)
     puts "Calling Salesforce for records to update..."
     records = Call.query_sf(sf_client)
-    # puts records.count
+    puts records.count
 
     if records.first
       records.each do |record|
@@ -23,6 +23,7 @@ class Call < ApplicationRecord
       end
     else
       puts "No records to update at this time"
+      sleep 40
     end
 
   end

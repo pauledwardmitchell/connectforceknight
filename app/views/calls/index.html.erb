@@ -1,1 +1,14 @@
-index.html.erb
+<h3>Up and running...</h3>
+
+<% if @number_of_records %>
+  <% if @number_of_records > 0 %>
+    <h5><%= @number_of_records %></h5>
+  <% elsif @number_of_records == 0 %>
+    <h5>NONE</h5>
+  <% end %>
+<% else %>
+  <h5></h5>
+<% end %>
+
+
+
