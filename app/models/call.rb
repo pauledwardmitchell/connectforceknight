@@ -48,7 +48,7 @@ class Call < ApplicationRecord
                                    AND REOHQ__REOHQ_Property_Type__c = 'Detached Single'
                                    AND ((MLS_Status__c = 'Closed' AND Closed_Date__c = LAST_N_MONTHS:12) OR MLS_Status__c IN ('Pending', 'Contingent', 'Active', 'New', 'Price Change', 'Back on Market', 'Reactivated'))
                                    AND Tax_Sq_Footage__c IN (null, 0)
-                                   AND REOHQ__REOHQ_County__c IN ('Cook', 'Lake', 'McHenry', 'Kane', 'DuPage', 'Will', 'Kendall')
+                                   AND REOHQ__REOHQ_County__c IN ('Cook', 'Lake', 'McHenry', 'Mc Henry', 'Kane', 'DuPage', 'Du Page', 'Will', 'Kendall')
                                    AND Area_Number__c != null
                                    AND BKFS__c = false")
   end
