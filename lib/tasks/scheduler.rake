@@ -19,13 +19,13 @@ task :sf_to_bk_task => :environment do
   bk_client = Call.create_live_bk_client_with_static_ip
   start_time = Time.now
 
-  10.times do
+  15.times do
     puts "Process running for : " + ((Time.now - start_time) / 60).round(2).to_s + " minutes..."
     if Time.now - start_time > 560
       break
     end
     Call.big_one(sf_client, bk_client)
-    sleep 30
+    sleep 10
     puts "Update loop done."
   end
   puts "Sync task finished"
